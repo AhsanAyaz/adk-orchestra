@@ -4,6 +4,9 @@ ParallelAgent demo — "fan-out / gather" from slides.
 Three researchers run concurrently, each writing a UNIQUE output_key.
 A Synthesizer runs after all three complete (wrapped in SequentialAgent).
 
+google_search is used here as a grounding tool (Gemini built-in).
+Rule: each agent that uses google_search has NO other tools.
+
 Run: adk web (from adk-orchestra/)  →  select "parallel_research"
 Ask: "Research the future of renewable energy"
 
@@ -12,6 +15,7 @@ Watch the Events tab: branch events from all three researchers interleave in rea
 ⚠️  Pitfall shown: each branch uses a unique output_key — no race condition.
 """
 from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
+from google.adk.tools import google_search
 
 MODEL = "gemini-flash-latest"
 
@@ -20,10 +24,10 @@ renewable_researcher = LlmAgent(
     model=MODEL,
     description="Researches renewable energy trends.",
     instruction=(
-        "You are an expert on renewable energy. "
-        "Summarise 3 of the most important recent developments in renewable energy. "
-        "Output a 2-sentence summary using your knowledge."
+        "Research the 3 most important recent developments in renewable energy. "
+        "Output a 2-sentence summary."
     ),
+    tools=[google_search],
     output_key="renewable_result",
 )
 
@@ -32,10 +36,10 @@ ev_researcher = LlmAgent(
     model=MODEL,
     description="Researches electric vehicle technology trends.",
     instruction=(
-        "You are an expert on electric vehicles. "
-        "Summarise the latest key advances in electric vehicle technology. "
-        "Output a 2-sentence summary using your knowledge."
+        "Research the latest key advances in electric vehicle technology. "
+        "Output a 2-sentence summary."
     ),
+    tools=[google_search],
     output_key="ev_result",
 )
 
@@ -44,10 +48,10 @@ carbon_researcher = LlmAgent(
     model=MODEL,
     description="Researches carbon capture methods.",
     instruction=(
-        "You are an expert on carbon capture. "
-        "Summarise the most promising current carbon capture methods and breakthroughs. "
-        "Output a 2-sentence summary using your knowledge."
+        "Research the most promising current carbon capture methods and breakthroughs. "
+        "Output a 2-sentence summary."
     ),
+    tools=[google_search],
     output_key="carbon_result",
 )
 

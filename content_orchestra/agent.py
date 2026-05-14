@@ -28,6 +28,7 @@ Ask: "AI developer tools in 2026"
 Watch: State tab shows all keys fill in order.
 """
 from google.adk.agents import LlmAgent, LoopAgent, SequentialAgent
+from google.adk.tools import google_search
 from google.adk.tools.tool_context import ToolContext
 
 MODEL = "gemini-flash-latest"
@@ -39,10 +40,11 @@ trend_researcher = LlmAgent(
     model=MODEL,
     description="Finds current trends for a given topic.",
     instruction=(
-        "You are a trend analyst. Using your knowledge, identify 3 current trends about: {topic?}\n"
+        "Find 3 current trends about: {topic?}\n"
         "If no topic is provided, use the user's original message as the topic.\n"
         "Output a short bullet list of trends."
     ),
+    tools=[google_search],
     output_key="trends",
 )
 
@@ -51,10 +53,11 @@ audience_researcher = LlmAgent(
     model=MODEL,
     description="Identifies the target audience for a topic.",
     instruction=(
-        "You are an audience research specialist. Using your knowledge, identify the target audience for: {topic?}\n"
+        "Identify the target audience for: {topic?}\n"
         "If no topic is provided, use the user's original message as the topic.\n"
         "Output 3 concise persona bullets (role, goal, pain point)."
     ),
+    tools=[google_search],
     output_key="audience",
 )
 
@@ -63,10 +66,11 @@ competitor_researcher = LlmAgent(
     model=MODEL,
     description="Finds competing content for a topic.",
     instruction=(
-        "You are a competitive content analyst. Using your knowledge, name 3 well-known existing articles or resources about: {topic?}\n"
+        "Find 3 existing articles or resources about: {topic?}\n"
         "If no topic is provided, use the user's original message as the topic.\n"
         "Output: title + one-line summary for each."
     ),
+    tools=[google_search],
     output_key="competitors",
 )
 
