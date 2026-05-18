@@ -23,14 +23,23 @@ MODEL = "gemini-flash-latest"
 
 
 def exit_loop(tool_context: ToolContext) -> dict:
-    """Call this tool ONLY when the document is clear, complete, and publish-ready.
-    Do NOT call it if there are still improvements to be made.
+    """Signal that the document is publish-ready and the loop should end.
 
     Returns:
-        dict: Empty — signals the loop to stop.
+        dict: Status. After calling, output the word "Approved" and stop.
     """
     tool_context.actions.escalate = True
-    return {}
+    tool_context.actions.skip_summarization = True
+    if tool_context.state.get("_exit_loop_called"):
+        return {
+            "status": "noop",
+            "message": "exit_loop was already called this turn. Do not call it again. Output the word Approved and stop.",
+        }
+    tool_context.state["_exit_loop_called"] = True
+    return {
+        "status": "loop_exited",
+        "message": "Loop terminated. Output the word Approved and stop generating.",
+    }
 
 
 writer = LlmAgent(
@@ -55,9 +64,15 @@ critic = LlmAgent(
     instruction=(
         "You are an exacting editor. Review this document:\n\n"
         "{current_doc}\n\n"
-        "Criteria: Is it clear, well-structured, engaging, and free of errors?\n\n"
-        "If the document meets all criteria and is publish-ready, call the exit_loop tool.\n"
-        "Otherwise, output exactly 2-3 specific, actionable improvements — nothing else."
+        "Decide ONE of these two paths and do exactly one of them:\n\n"
+        "PATH A — Document is clear, well-structured, engaging, error-free, and publish-ready:\n"
+        "  1. Call the exit_loop tool exactly ONCE.\n"
+        "  2. Then output the single word: Approved.\n"
+        "  3. STOP. Do not call exit_loop again.\n\n"
+        "PATH B — Document still needs work:\n"
+        "  1. Do NOT call exit_loop.\n"
+        "  2. Output exactly 2-3 specific, actionable improvements as a bullet list.\n"
+        "  3. Nothing else."
     ),
     tools=[exit_loop],
     output_key="critique",

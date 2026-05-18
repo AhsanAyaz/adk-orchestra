@@ -114,14 +114,23 @@ drafter = LlmAgent(
 # ── Stage 4: Refinement Loop ──────────────────────────────────────────────────
 
 def exit_loop(tool_context: ToolContext) -> dict:
-    """Call ONLY when the draft is clear, accurate, well-structured, and publish-ready.
-    Do NOT call if there are still improvements needed.
+    """Signal that the draft is publish-ready and the loop should end.
 
     Returns:
-        dict: Empty — signals the loop to stop.
+        dict: Status. After calling, output the word "Approved" and stop.
     """
     tool_context.actions.escalate = True
-    return {}
+    tool_context.actions.skip_summarization = True
+    if tool_context.state.get("_exit_loop_called"):
+        return {
+            "status": "noop",
+            "message": "exit_loop was already called this turn. Do not call it again. Output the word Approved and stop.",
+        }
+    tool_context.state["_exit_loop_called"] = True
+    return {
+        "status": "loop_exited",
+        "message": "Loop terminated. Output the word Approved and stop generating.",
+    }
 
 
 reviser = LlmAgent(
@@ -144,8 +153,15 @@ critic = LlmAgent(
         "Critique the following article:\n{draft}\n\n"
         "Check: Is it clear, accurate, engaging, and well-structured for this audience?\n"
         "Audience: {audience}\n\n"
-        "If the article is publish-ready, call exit_loop.\n"
-        "Otherwise, output exactly 2-3 specific improvements — nothing else."
+        "Decide ONE of these two paths and do exactly one of them:\n\n"
+        "PATH A — Article is publish-ready:\n"
+        "  1. Call the exit_loop tool exactly ONCE.\n"
+        "  2. Then output the single word: Approved.\n"
+        "  3. STOP. Do not call exit_loop again.\n\n"
+        "PATH B — Article still needs work:\n"
+        "  1. Do NOT call exit_loop.\n"
+        "  2. Output exactly 2-3 specific improvements as a bullet list.\n"
+        "  3. Nothing else."
     ),
     tools=[exit_loop],
     output_key="critique",
